@@ -1,26 +1,24 @@
 {
   "BASE_URL": "https://www.jumia.co.ke/",
   "CATEGORIES": [
-    "phones-tablets",
     "electronics",
+    "phones-tablets",
     "computing",
+    "laptops",
+    "home-living",
+    "fashion-mens",
+    "fashion-womens",
     "health-beauty",
-    "mens-clothing",
-    "womens-clothing",
-    "home-office",
+    "kitchen-appliances",
+    "sports-outdoor",
     "baby-products",
-    "groceries",
-    "gaming"
+    "gaming",
+    "televisions"
   ],
-  "TELEGRAM_TOKEN": "8248716217:AAFlkDGIPGIIz1LHizS3OgSUdj94dp6C5-g",
-  "TELEGRAM_CHAT_ID": "-1003285979057",
+  "TELEGRAM_TOKEN": "8502597717:AAEMjEhl28a6WYfsv9IetLRnQTvXhOBofPs",
+  "TELEGRAM_CHAT_ID": "-1003741865155",
   "AFF_CODE": "5bed0bdf3d1ca",
-  "BITLY_TOKEN": "77a3bc0d1d8e382c9dbd2b72efc8d748c0af814b",
   "HEADERS": {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Connection": "keep-alive"
+    "User-Agent": "Mozilla/5.0"
   }
 }
-

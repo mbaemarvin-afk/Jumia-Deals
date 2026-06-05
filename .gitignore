@@ -1,0 +1,5 @@
+config.json
+sent_deals.json
+venv/
+__pycache__/
+.env

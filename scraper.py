@@ -3,50 +3,36 @@ from bs4 import BeautifulSoup
 import json
 import random
 
-with open("config.json", "r") as f:
-    config = json.load(f)
+cfg = json.load(open("config.json"))
 
-BASE_URL = config["BASE_URL"]
-CATEGORIES = config["CATEGORIES"]
+BASE_URL = cfg["BASE_URL"]
+CATEGORIES = cfg["CATEGORIES"]
 
-category = random.choice(CATEGORIES)
-print(f"🛍️ Fetching deals from category: {category}")
+def get_deals():
+    category = random.choice(CATEGORIES)
+    url = f"{BASE_URL}{category}/"
 
-url = f"{BASE_URL}{category}/"
-headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                  "AppleWebKit/537.36 (KHTML, like Gecko) "
-                  "Chrome/120.0.0.0 Safari/537.36"
-}
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
 
-response = requests.get(url, headers=headers)
-if response.status_code != 200:
-    print("⚠️ Failed to fetch the page. Status code:", response.status_code)
-    exit()
+    r = requests.get(url, headers=headers)
+    soup = BeautifulSoup(r.text, "html.parser")
 
-soup = BeautifulSoup(response.text, "html.parser")
-products = soup.select(".core, .sku, .prd")
+    products = soup.select("article.prd")
 
-if not products:
-    print("😢 No products found. Try another category slug or update selector.")
-else:
-    print(f"✅ Found {len(products)} products.\n")
+    deals = []
 
-deals = []
-for p in products[:10]:
-    name = p.select_one(".name")
-    price = p.select_one(".prc")
-    link_tag = p.find("a", href=True)
+    for p in products[:10]:
+        name = p.select_one("h3")
+        price = p.select_one(".prc")
+        link = p.select_one("a")
 
-    if name and price and link_tag:
-        deals.append({
-            "name": name.text.strip(),
-            "price": price.text.strip(),
-            "link": f"https://www.jumia.co.ke{link_tag['href']}"
-        })
+        if name and price and link:
+            deals.append({
+                "name": name.text,
+                "price": price.text,
+                "link": BASE_URL + link["href"]
+            })
 
-if not deals:
-    print("⚠️ Missing product data — possibly layout changed or class names are different.")
-else:
-    for d in deals:
-        print(d)
+    return deals
