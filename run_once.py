@@ -54,9 +54,6 @@ def save_sent(data):
         json.dump(list(data), f)
 
 
-sent = load_sent()
-
-
 # ----------------------------
 # DEAL ID
 # ----------------------------
@@ -79,7 +76,7 @@ def discount(old, new):
 
 
 # ----------------------------
-# TELEGRAM SENDER (SAFE)
+# TELEGRAM SENDER
 # ----------------------------
 def send(msg):
     if not TOKEN or not CHAT_ID:
@@ -152,43 +149,41 @@ def scrape_category(cat):
 
 
 # ----------------------------
-# MAIN RUN
+# MAIN FUNCTION (IMPORTANT)
 # ----------------------------
-all_products = []
+def run():
+    sent = load_sent()
 
-print("🚀 Starting scrape...")
+    all_products = []
+    sent_count = 0
 
-for cat in CATEGORIES:
-    print(f"Scraping: {cat}")
-    all_products += scrape_category(cat)
+    print("🚀 Starting scrape...")
 
+    for cat in CATEGORIES:
+        print(f"Scraping: {cat}")
+        all_products += scrape_category(cat)
 
-# ----------------------------
-# PROCESS PRODUCTS
-# ----------------------------
-sent_count = 0
+    for p in all_products:
 
-for p in all_products:
+        d_id = make_id(p["title"], p["price"])
 
-    d_id = make_id(p["title"], p["price"])
+        if d_id in sent:
+            continue
 
-    if d_id in sent:
-        continue
+        disc = discount(p["old_price"], p["price"])
 
-    disc = discount(p["old_price"], p["price"])
+        # 💰 FILTER: only 20%+
+        if disc < 20:
+            continue
 
-    # 💰 FILTER: only 20%+
-    if disc < 20:
-        continue
+        # affiliate link
+        link = p["url"]
+        if "?" in link:
+            link += f"&affiliate_id={AFF_CODE}"
+        else:
+            link += f"?affiliate_id={AFF_CODE}"
 
-    # affiliate link
-    link = p["url"]
-    if "?" in link:
-        link += f"&affiliate_id={AFF_CODE}"
-    else:
-        link += f"?affiliate_id={AFF_CODE}"
-
-    msg = f"""
+        msg = f"""
 🔥 <b>HOT DEAL ALERT</b>
 
 📦 {p['title']}
@@ -199,12 +194,18 @@ for p in all_products:
 🛒 <a href="{link}">Buy Now</a>
 """
 
-    send(msg)
+        send(msg)
 
-    sent.add(d_id)
-    sent_count += 1
+        sent.add(d_id)
+        sent_count += 1
+
+    save_sent(sent)
+
+    print(f"✅ Done. Sent {sent_count} deals")
 
 
-save_sent(sent)
-
-print(f"✅ Done. Sent {sent_count} deals")
+# ----------------------------
+# LOCAL TEST
+# ----------------------------
+if __name__ == "__main__":
+    run()
