@@ -1,22 +1,27 @@
 from flask import Flask
 import threading
 import time
-import run_once  # we will refactor logic into it
+import run_once
 
 app = Flask(__name__)
 
 # ----------------------------
-# HEALTH CHECK (for UptimeRobot)
+# HEALTH CHECK (UptimeRobot)
 # ----------------------------
 @app.route("/")
 def home():
-    return "Jumia Bot is running ✅"
+    return "🚀 Jumia Bot is running"
 
+# ----------------------------
+# MANUAL TRIGGER (TEST)
+# ----------------------------
 @app.route("/run")
 def run_now():
-    run_once.main()
-    return "Scraper executed ✅"
-
+    try:
+        run_once.run()
+        return "✅ Scraper executed"
+    except Exception as e:
+        return f"❌ Error: {e}"
 
 # ----------------------------
 # BACKGROUND SCHEDULER
@@ -24,18 +29,17 @@ def run_now():
 def scheduler():
     while True:
         try:
-            run_once.main()
+            print("⏰ Running scheduled scrape...")
+            run_once.run()
         except Exception as e:
             print("Scheduler error:", e)
 
         time.sleep(3600)  # 1 hour
 
-
 # ----------------------------
 # START BACKGROUND THREAD
 # ----------------------------
 threading.Thread(target=scheduler, daemon=True).start()
-
 
 # ----------------------------
 # START SERVER
