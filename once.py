@@ -1,0 +1,1 @@
+print("🔥 once.py is running correctly")

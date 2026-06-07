@@ -18,4 +18,4 @@ payload = {
 
 response = requests.post(url, data=payload)
 
-print(response.text)
+print(response.text)python test_telegram.py
