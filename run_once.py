@@ -1,34 +1,39 @@
-import os
 import requests
 import hashlib
 import json
 from bs4 import BeautifulSoup
 
-# ----------------------------
-# ENV VARIABLES
-# ----------------------------
-TOKEN = os.getenv("TELEGRAM_TOKEN")
-CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
-AFF_CODE = os.getenv("AFF_CODE", "")
+# =====================================
+# LOAD CONFIG
+# =====================================
+
+with open("config.json", "r", encoding="utf-8") as f:
+    config = json.load(f)
+
+TOKEN = config["TELEGRAM_TOKEN"]
+CHAT_ID = config["TELEGRAM_CHAT_ID"]
+AFF_CODE = config["AFF_CODE"]
 
 BASE_URL = "https://www.jumia.co.ke"
-
-CATEGORIES = [
-    "electronics",
-    "phones-tablets",
-    "computing"
-]
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0"
 }
 
+CATEGORIES = [
+    "phones-tablets",
+    "computing",
+    "televisions",
+    "electronics"
+]
+
 SENT_FILE = "sent_deals.json"
 
 
-# ----------------------------
-# LOAD SENT DEALS
-# ----------------------------
+# =====================================
+# LOAD PREVIOUS POSTS
+# =====================================
+
 def load_sent():
     try:
         with open(SENT_FILE, "r") as f:
@@ -42,68 +47,79 @@ def save_sent(data):
         json.dump(list(data), f)
 
 
-# ----------------------------
+# =====================================
 # TELEGRAM
-# ----------------------------
-def send(msg):
-    if not TOKEN or not CHAT_ID:
-        print("❌ TELEGRAM_TOKEN or TELEGRAM_CHAT_ID missing")
-        return
+# =====================================
+
+def send_telegram(message):
 
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
-    r = requests.post(
+    response = requests.post(
         url,
         data={
             "chat_id": CHAT_ID,
-            "text": msg,
+            "text": message,
             "parse_mode": "HTML",
             "disable_web_page_preview": False
         }
     )
 
-    print("Telegram:", r.status_code, r.text)
+    print("Telegram:", response.status_code)
+
+    if response.status_code == 200:
+        return True
+
+    print(response.text)
+    return False
 
 
-# ----------------------------
+# =====================================
 # UNIQUE ID
-# ----------------------------
+# =====================================
+
 def make_id(title, price):
+
     return hashlib.md5(
         f"{title}{price}".encode()
     ).hexdigest()
 
 
-# ----------------------------
+# =====================================
 # SCRAPER
-# ----------------------------
+# =====================================
+
 def scrape_category(category):
 
     url = f"{BASE_URL}/{category}/"
 
-    print("Scraping:", url)
+    print(f"Scraping: {url}")
 
     try:
-        r = requests.get(
+
+        response = requests.get(
             url,
             headers=HEADERS,
-            timeout=20
+            timeout=30
         )
 
-        print("Status:", r.status_code)
+        print("Status:", response.status_code)
 
-        soup = BeautifulSoup(r.text, "html.parser")
+        soup = BeautifulSoup(
+            response.text,
+            "html.parser"
+        )
 
-        products = []
-
-        # More flexible selector
         cards = soup.find_all("article")
 
         print("Found cards:", len(cards))
 
+        products = []
+
         for card in cards:
 
             try:
+
                 title_tag = card.find("h3")
 
                 if not title_tag:
@@ -123,76 +139,93 @@ def scrape_category(category):
                 if not link_tag:
                     continue
 
-                link = BASE_URL + link_tag["href"]
+                product_url = (
+                    BASE_URL +
+                    link_tag["href"]
+                )
+
+                affiliate_url = (
+                    product_url +
+                    f"?aff_id={AFF_CODE}"
+                )
 
                 products.append({
                     "title": title,
                     "price": price,
-                    "url": link
+                    "url": affiliate_url
                 })
 
             except Exception as e:
-                print("Item error:", e)
+                print("Product Error:", e)
 
         return products
 
     except Exception as e:
-        print("Scrape error:", e)
+
+        print("Scrape Error:", e)
         return []
 
 
-# ----------------------------
+# =====================================
 # MAIN
-# ----------------------------
+# =====================================
+
 def run():
 
-    print("🚀 Starting scrape")
+    print("🚀 Starting Jumia DealHunter")
 
     sent = load_sent()
 
-    total_products = []
+    all_products = []
 
     for category in CATEGORIES:
-        total_products.extend(
-            scrape_category(category)
-        )
 
-    print("Products found:", len(total_products))
+        products = scrape_category(category)
 
-    # TEST MODE:
-    # Send first 5 products regardless of discount
+        all_products.extend(products)
+
+    print(
+        f"Products found: {len(all_products)}"
+    )
 
     sent_count = 0
 
-    for p in total_products[:5]:
+    for product in all_products[:10]:
 
         deal_id = make_id(
-            p["title"],
-            p["price"]
+            product["title"],
+            product["price"]
         )
 
         if deal_id in sent:
             continue
 
-        msg = f"""
-🔥 <b>JUMIA DEAL</b>
+        message = f"""
+🔥 <b>JUMIA 14 YEARS NA WEWE DEAL</b>
 
-📦 {p['title']}
+📦 {product['title']}
 
-💰 {p['price']}
+💰 {product['price']}
 
-🛒 {p['url']}
+🛒 Buy Now:
+{product['url']}
+
+⚡ Limited Stock
 """
 
-        send(msg)
+        success = send_telegram(message)
 
-        sent.add(deal_id)
+        if success:
 
-        sent_count += 1
+            sent.add(deal_id)
+
+            sent_count += 1
 
     save_sent(sent)
 
-    print("✅ Sent:", sent_count)
+    print(
+        f"✅ Successfully sent {sent_count} deals"
+    )
 
 
 if __name__ == "__main__":
