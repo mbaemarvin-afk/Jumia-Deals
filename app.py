@@ -6,20 +6,20 @@ import run_once
 app = Flask(__name__)
 
 # ----------------------------
-# HEALTH CHECK (UptimeRobot)
+# HEALTH CHECK
 # ----------------------------
 @app.route("/")
 def home():
     return "🚀 Jumia Bot is running"
 
 # ----------------------------
-# MANUAL TRIGGER (TEST)
+# MANUAL TRIGGER
 # ----------------------------
 @app.route("/run")
 def run_now():
     try:
         run_once.run()
-        return "✅ Scraper executed"
+        return "✅ Scraper executed successfully"
     except Exception as e:
         return f"❌ Error: {e}"
 
@@ -37,9 +37,13 @@ def scheduler():
         time.sleep(3600)  # 1 hour
 
 # ----------------------------
-# START BACKGROUND THREAD
+# SAFE THREAD START
 # ----------------------------
-threading.Thread(target=scheduler, daemon=True).start()
+def start_scheduler():
+    thread = threading.Thread(target=scheduler, daemon=True)
+    thread.start()
+
+start_scheduler()
 
 # ----------------------------
 # START SERVER

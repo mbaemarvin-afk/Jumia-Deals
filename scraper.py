@@ -9,30 +9,40 @@ BASE_URL = cfg["BASE_URL"]
 CATEGORIES = cfg["CATEGORIES"]
 
 def get_deals():
-    category = random.choice(CATEGORIES)
-    url = f"{BASE_URL}{category}/"
+    try:
+        category = random.choice(CATEGORIES)
+        url = f"{BASE_URL}{category}/"
 
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
+        headers = {
+            "User-Agent": "Mozilla/5.0"
+        }
 
-    r = requests.get(url, headers=headers)
-    soup = BeautifulSoup(r.text, "html.parser")
+        r = requests.get(url, headers=headers, timeout=10)
 
-    products = soup.select("article.prd")
+        if r.status_code != 200:
+            print("Failed to fetch:", url)
+            return []
 
-    deals = []
+        soup = BeautifulSoup(r.text, "html.parser")
 
-    for p in products[:10]:
-        name = p.select_one("h3")
-        price = p.select_one(".prc")
-        link = p.select_one("a")
+        products = soup.select("article.prd")
 
-        if name and price and link:
-            deals.append({
-                "name": name.text,
-                "price": price.text,
-                "link": BASE_URL + link["href"]
-            })
+        deals = []
 
-    return deals
+        for p in products[:10]:
+            name = p.select_one("h3")
+            price = p.select_one(".prc")
+            link = p.select_one("a")
+
+            if name and price and link:
+                deals.append({
+                    "name": name.text.strip(),
+                    "price": price.text.strip(),
+                    "link": BASE_URL + link["href"]
+                })
+
+        return deals
+
+    except Exception as e:
+        print("Scraper error:", e)
+        return []
